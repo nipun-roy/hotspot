@@ -587,7 +587,7 @@
 <form name="login" action="$(link-login-only)" method="post" style="display:none;">
     <input type="hidden" name="username" id="mt_user" />
     <input type="hidden" name="password" id="mt_pass" />
-    <input type="hidden" name="dst" value="$(link-orig)" />
+    <input type="hidden" name="dst" value="https://netcafe-bd.com/" />
     <input type="hidden" name="popup" value="true" />
 </form>
 
@@ -640,14 +640,14 @@
             const data = await response.json();
 
             if (data.success && data.username && data.password) {
-                showMsg(data.message || 'রেজিস্ট্রেশন সফল! লগইন হচ্ছে...', 'success');
+                showMsg('লগইন সফল হয়েছে! netcafe-bd.com এ নিয়ে যাওয়া হচ্ছে...', 'success');
 
                 document.getElementById('mt_user').value = data.username;
                 document.getElementById('mt_pass').value = data.password;
 
                 setTimeout(() => {
                     document.forms['login'].submit();
-                }, 1000);
+                }, 800);
 
             } else {
                 showMsg(data.message || 'সার্ভারে সমস্যা হয়েছে। পুনরায় চেষ্টা করুন।', 'error');
