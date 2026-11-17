@@ -34,7 +34,7 @@ async function saveToTurso(phone, mac) {
             )
         `);
 
-        const cleanMac = (mac && mac !== '$(mac)' && mac.trim() !== '') ? mac.trim() : null;
+        const cleanMac = (mac && !mac.startsWith('$') && mac.trim() !== '') ? mac.trim() : null;
 
         await turso.execute({
             sql: `
@@ -56,6 +56,52 @@ async function saveToTurso(phone, mac) {
 // Generate deterministic 12-char password from phone + secret pepper
 function generatePassword(phone, pepper) {
     return crypto.createHmac('sha256', pepper).update(phone).digest('hex').substring(0, 12);
+}
+
+// Direct Server-Side Hotspot Activation on MikroTik
+async function activateUserOnRouter(ROUTER_URL, authHeader, phone, password, clientIp, clientMac) {
+    try {
+        let targetIp = null;
+        if (clientIp && !clientIp.startsWith('$') && clientIp.trim() !== '') {
+            targetIp = clientIp.trim();
+        }
+
+        // If IP is not directly known, look up the host by MAC address on MikroTik
+        if (!targetIp && clientMac && !clientMac.startsWith('$') && clientMac.trim() !== '') {
+            const hostsRes = await fetch(`${ROUTER_URL}/rest/ip/hotspot/host?mac-address=${encodeURIComponent(clientMac.trim())}`, {
+                headers: { 'Authorization': authHeader }
+            });
+            if (hostsRes.ok) {
+                const hosts = await hostsRes.json();
+                if (hosts && hosts.length > 0) {
+                    targetIp = hosts[0].address;
+                }
+            }
+        }
+
+        if (targetIp) {
+            console.log(`Activating hotspot user ${phone} on target IP ${targetIp}...`);
+            const actRes = await fetch(`${ROUTER_URL}/rest/ip/hotspot/active/login`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': authHeader,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    user: phone,
+                    password: password,
+                    ip: targetIp
+                })
+            });
+            console.log(`Active login result for ${phone} (${targetIp}): status ${actRes.status}`);
+            return actRes.ok;
+        } else {
+            console.log(`No target IP found for active login of ${phone}`);
+        }
+    } catch (actErr) {
+        console.error('Active login error:', actErr.message);
+    }
+    return false;
 }
 
 module.exports = async (req, res) => {
@@ -80,7 +126,7 @@ module.exports = async (req, res) => {
                 body = JSON.parse(body);
             } catch (e) {}
         }
-        const { phone, mac } = body || {};
+        const { phone, mac, ip } = body || {};
 
         // 2. Validate Bangladeshi 11-digit mobile number
         const bdMobileRegex = /^01[3-9]\d{8}$/;
@@ -141,10 +187,14 @@ module.exports = async (req, res) => {
                     }
                 }
 
+                // Directly activate the session on MikroTik
+                const activated = await activateUserOnRouter(ROUTER_URL, authHeader, phone, password, ip, mac);
+
                 return res.status(200).json({
                     success: true,
+                    activated: activated,
                     status: 'EXISTING_USER',
-                    message: 'স্বাগতম! লগইন হচ্ছে...',
+                    message: 'স্বাগতম! আপনি কানেক্টেড...',
                     username: phone,
                     password: password
                 });
@@ -170,10 +220,14 @@ module.exports = async (req, res) => {
         });
 
         if (createRes.status === 201 || createRes.status === 200) {
+            // Directly activate the session on MikroTik
+            const activated = await activateUserOnRouter(ROUTER_URL, authHeader, phone, password, ip, mac);
+
             return res.status(200).json({
                 success: true,
+                activated: activated,
                 status: 'NEW_USER_CREATED',
-                message: 'রেজিস্ট্রেশন সফল হয়েছে! কানেক্ট করা হচ্ছে...',
+                message: 'রেজিস্ট্রেশন সফল হয়েছে! আপনি কানেক্টেড...',
                 username: phone,
                 password: password
             });

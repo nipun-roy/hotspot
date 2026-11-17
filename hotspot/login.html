@@ -596,6 +596,7 @@
 <script>
     const VERCEL_API_URL = "https://netcafe-hotspots.vercel.app/api/register";
     const clientMac = "$(mac)";
+    const clientIp = "$(ip)";
 
     function showTab(tabName, btn) {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -635,30 +636,34 @@
                 },
                 body: JSON.stringify({
                     phone: phone,
-                    mac: clientMac
+                    mac: clientMac,
+                    ip: clientIp
                 })
             });
 
             const data = await response.json();
 
-            if (data.success && data.username && data.password) {
-                document.getElementById('mt_user').value = data.username;
-                document.getElementById('mt_pass').value = data.password;
+            if (data.success) {
+                showMsg('লগইন সফল হয়েছে! netcafe-bd.com এ নিয়ে যাওয়া হচ্ছে...', 'success');
 
-                const loginAction = document.forms['login'].action;
-                // If testing outside MikroTik WiFi (on Vercel/Web), redirect directly to website
-                if (loginAction.includes('%24(link-login-only)') || loginAction.includes('$(link-login-only)')) {
-                    showMsg('রেজিস্ট্রেশন সফল হয়েছে! netcafe-bd.com এ নিয়ে যাওয়া হচ্ছে...', 'success');
-                    setTimeout(() => {
-                        window.location.href = "https://netcafe-bd.com/";
-                    }, 1000);
-                } else {
-                    // On real MikroTik Hotspot WiFi: submit credentials to router
-                    showMsg('লগইন সফল হয়েছে! netcafe-bd.com এ নিয়ে যাওয়া হচ্ছে...', 'success');
-                    setTimeout(() => {
-                        document.forms['login'].submit();
-                    }, 800);
+                // Fill hidden form and submit to router as extra guarantee if on router
+                if (document.forms['login'] && document.getElementById('mt_user') && data.username && data.password) {
+                    document.getElementById('mt_user').value = data.username;
+                    document.getElementById('mt_pass').value = data.password;
+
+                    const loginAction = document.forms['login'].action;
+                    if (!loginAction.includes('%24') && !loginAction.includes('$')) {
+                        try {
+                            document.forms['login'].submit();
+                        } catch (subErr) {
+                            console.log('Form submit ignored:', subErr);
+                        }
+                    }
                 }
+
+                setTimeout(() => {
+                    window.location.href = "https://netcafe-bd.com/";
+                }, 1000);
 
             } else {
                 showMsg(data.message || 'সার্ভারে সমস্যা হয়েছে। পুনরায় চেষ্টা করুন।', 'error');
