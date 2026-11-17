@@ -24,7 +24,6 @@ try {
 async function saveToTurso(phone, mac) {
     if (!turso) return;
     try {
-        // 1. Create table if not exists
         await turso.execute(`
             CREATE TABLE IF NOT EXISTS hotspot_users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -35,7 +34,6 @@ async function saveToTurso(phone, mac) {
             )
         `);
 
-        // 2. Insert new user or update last_login on conflict
         const cleanMac = (mac && mac !== '$(mac)' && mac.trim() !== '') ? mac.trim() : null;
 
         await turso.execute({
@@ -49,7 +47,7 @@ async function saveToTurso(phone, mac) {
             args: [phone, cleanMac, cleanMac]
         });
 
-        console.log(`Turso DB: Successfully saved/updated customer ${phone}`);
+        console.log(`Turso DB: Successfully recorded customer ${phone}`);
     } catch (dbErr) {
         console.error('Turso DB Error:', dbErr.message);
     }
@@ -67,7 +65,6 @@ module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
 
-    // Handle preflight OPTIONS request
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
@@ -94,7 +91,7 @@ module.exports = async (req, res) => {
             });
         }
 
-        // 3. Environment Variables (Strictly from Vercel)
+        // 3. Environment Variables
         const ROUTER_URL = process.env.ROUTER_URL;
         const API_USER = process.env.API_USER;
         const API_PASS = process.env.API_PASS;
@@ -110,10 +107,10 @@ module.exports = async (req, res) => {
         const password = generatePassword(phone, SECRET_PEPPER);
         const authHeader = 'Basic ' + Buffer.from(`${API_USER}:${API_PASS}`).toString('base64');
 
-        // 4. Save/Update to Turso Database in parallel
+        // 4. Record to Turso Database in background
         await saveToTurso(phone, mac);
 
-        // 5. Check if user already exists in MikroTik Hotspot database
+        // 5. Check if user already exists in MikroTik Hotspot
         const checkUrl = `${ROUTER_URL}/rest/ip/hotspot/user?name=${phone}`;
         const checkRes = await fetch(checkUrl, {
             method: 'GET',
@@ -126,6 +123,24 @@ module.exports = async (req, res) => {
         if (checkRes.ok) {
             const users = await checkRes.json();
             if (users && users.length > 0) {
+                const existingUser = users[0];
+
+                // If user had an old MAC address bound, clear it so they can switch phones freely
+                if (existingUser['mac-address'] && existingUser['mac-address'] !== '') {
+                    try {
+                        await fetch(`${ROUTER_URL}/rest/ip/hotspot/user/${existingUser['.id']}`, {
+                            method: 'PATCH',
+                            headers: {
+                                'Authorization': authHeader,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ 'mac-address': '' })
+                        });
+                    } catch (patchErr) {
+                        console.error('MAC clear error:', patchErr.message);
+                    }
+                }
+
                 return res.status(200).json({
                     success: true,
                     status: 'EXISTING_USER',
@@ -137,16 +152,13 @@ module.exports = async (req, res) => {
         }
 
         // 6. Create new Hotspot User in MikroTik
+        // NOTE: We deliberately do NOT bind 'mac-address' here so the customer can use any phone/device or randomized MAC
         const userPayload = {
             name: phone,
             password: password,
             profile: 'guest-profile',
             comment: `Self-reg | ${new Date().toLocaleDateString('en-GB')}`
         };
-
-        if (mac && mac !== '$(mac)' && mac.trim() !== '') {
-            userPayload['mac-address'] = mac.trim();
-        }
 
         const createRes = await fetch(`${ROUTER_URL}/rest/ip/hotspot/user`, {
             method: 'PUT',
