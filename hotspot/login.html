@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NetCafe Free WiFi Zone</title>
+    <title>NetCafe WiFi Hotspot</title>
     <style>
         * {
             box-sizing: border-box;
@@ -22,20 +22,20 @@
             color: #1e293b;
         }
 
-        /* Single Main Card matching user's exact model */
+        /* Single Main Card */
         .card {
             background: #ffffff;
             border-radius: 28px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);
             width: 100%;
             max-width: 420px;
-            padding: 28px 24px;
+            padding: 30px 24px;
             text-align: center;
             position: relative;
             overflow: hidden;
         }
 
-        /* Top NetCafe brand accent line */
+        /* Top Brand Color Strip */
         .card::before {
             content: '';
             position: absolute;
@@ -46,28 +46,32 @@
             background: linear-gradient(90deg, #1e3a8a 0%, #3b82f6 50%, #dc2626 100%);
         }
 
-        /* Brand Logo header */
+        /* NetCafe Logo: Enhanced, Focused and Prominent */
         .logo-box {
-            max-width: 170px;
-            margin: 0 auto 10px auto;
+            max-width: 260px;
+            margin: 6px auto 18px auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .logo-box img {
             max-width: 100%;
             height: auto;
-            max-height: 65px;
+            max-height: 125px;
             object-fit: contain;
             display: block;
             margin: 0 auto;
+            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.05));
         }
 
-        /* Navigation Tabs inside the Single Card */
+        /* Navigation Tabs */
         .tab-nav {
             display: flex;
             background: #f1f5f9;
             border-radius: 14px;
             padding: 4px;
-            margin-bottom: 20px;
+            margin-bottom: 22px;
             gap: 4px;
         }
 
@@ -105,37 +109,14 @@
         }
 
         /* ============================================================
-           TAB 1: WIFI LOGIN (EXACT MATCH OF USER'S SCREENSHOT)
+           TAB 1: WIFI LOGIN FORM
            ============================================================ */
-        .wifi-icon-circle {
-            width: 64px;
-            height: 64px;
-            background: #e0e7ff;
-            color: #4f46e5;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 16px auto;
-        }
-
-        .wifi-icon-circle svg {
-            width: 32px;
-            height: 32px;
-            fill: currentColor;
-        }
-
-        .card-title {
-            font-size: 24px;
-            font-weight: 800;
-            color: #0f172a;
-            margin-bottom: 4px;
-        }
-
         .card-subtitle {
-            font-size: 14px;
-            color: #64748b;
+            font-size: 15px;
+            font-weight: 600;
+            color: #475569;
             margin-bottom: 24px;
+            line-height: 1.4;
         }
 
         .input-group {
@@ -147,7 +128,7 @@
             display: block;
             font-size: 13px;
             font-weight: 700;
-            color: #334155;
+            color: #1e293b;
             margin-bottom: 8px;
         }
 
@@ -169,7 +150,7 @@
         input[type="tel"] {
             width: 100%;
             padding: 14px 14px 14px 50px;
-            font-size: 16px;
+            font-size: 17px;
             font-weight: 600;
             border: 2px solid #e2e8f0;
             border-radius: 14px;
@@ -181,17 +162,17 @@
         }
 
         input[type="tel"]:focus {
-            border-color: #4f46e5;
-            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
+            border-color: #1e3a8a;
+            box-shadow: 0 0 0 4px rgba(30, 58, 138, 0.12);
         }
 
         .action-btn {
             width: 100%;
-            padding: 14px;
+            padding: 15px;
             font-size: 16px;
             font-weight: 700;
             color: #ffffff;
-            background: #4f46e5;
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #dc2626 100%);
             border: none;
             border-radius: 14px;
             cursor: pointer;
@@ -200,12 +181,12 @@
             align-items: center;
             justify-content: center;
             gap: 10px;
-            box-shadow: 0 8px 18px -4px rgba(79, 70, 229, 0.4);
+            box-shadow: 0 8px 18px -4px rgba(30, 58, 138, 0.4);
         }
 
         .action-btn:hover {
-            background: #4338ca;
             transform: translateY(-1px);
+            box-shadow: 0 12px 22px -4px rgba(220, 38, 38, 0.45);
         }
 
         .action-btn:disabled {
@@ -232,9 +213,9 @@
         .msg-box {
             display: none;
             margin-top: 14px;
-            padding: 10px 14px;
+            padding: 11px 14px;
             border-radius: 10px;
-            font-size: 13px;
+            font-size: 13.5px;
             line-height: 1.4;
             text-align: left;
         }
@@ -260,7 +241,7 @@
         }
 
         /* ============================================================
-           TAB 2: PACKAGES (COMPACT & BEAUTIFUL CARDS)
+           TAB 2: PACKAGES
            ============================================================ */
         .pkg-scroll {
             max-height: 420px;
@@ -368,9 +349,9 @@
             background: #4f46e5;
             color: #ffffff;
             text-decoration: none;
-            padding: 8px;
-            border-radius: 8px;
-            font-size: 12px;
+            padding: 9px;
+            border-radius: 9px;
+            font-size: 13px;
             font-weight: 700;
         }
 
@@ -379,7 +360,7 @@
         }
 
         /* ============================================================
-           TAB 3: 24/7 SUPPORT INFO
+           TAB 3: 24/7 SUPPORT
            ============================================================ */
         .support-card {
             background: #0b1120;
@@ -438,12 +419,12 @@
 <body>
 
 <div class="card">
-    <!-- NetCafe Brand Logo Header -->
+    <!-- NetCafe Focused Hero Logo -->
     <div class="logo-box">
         <img src="logo.jpg" alt="NetCafe" onerror="this.src='../logo.jpg'" />
     </div>
 
-    <!-- Navigation Tabs (Everything inside single page) -->
+    <!-- Navigation Tabs -->
     <div class="tab-nav">
         <button class="tab-btn active" onclick="showTab('login', this)">📶 WiFi Login</button>
         <button class="tab-btn" onclick="showTab('packages', this)">🚀 প্যাকেজসমূহ</button>
@@ -451,16 +432,9 @@
     </div>
 
     <!-- ============================================== -->
-    <!-- TAB 1: FREE WIFI LOGIN (EXACT USER SCREENSHOT) -->
+    <!-- TAB 1: LOGIN (FOCUSED & CLEAN)                 -->
     <!-- ============================================== -->
     <div id="tab-login" class="tab-content active">
-        <div class="wifi-icon-circle">
-            <svg viewBox="0 0 24 24">
-                <path d="M12 4C7.31 4 3.07 5.9 0 8.98L12 21 24 8.98C20.93 5.9 16.69 4 12 4zm0 3.5c3.67 0 7.02 1.43 9.53 3.78L12 19.34 2.47 11.28C4.98 8.93 8.33 7.5 12 7.5z"/>
-            </svg>
-        </div>
-
-        <h2 class="card-title">Free WiFi Zone</h2>
         <p class="card-subtitle">আপনার মোবাইল নম্বর দিয়ে কানেক্ট করুন</p>
 
         <form id="regForm" onsubmit="handleWiFiLogin(event)">
@@ -493,7 +467,7 @@
     </div>
 
     <!-- ============================================== -->
-    <!-- TAB 2: PACKAGES (COMPACT MODERN CARDS)         -->
+    <!-- TAB 2: PACKAGES                                -->
     <!-- ============================================== -->
     <div id="tab-packages" class="tab-content">
         <div class="pkg-scroll">
@@ -582,7 +556,7 @@
     </div>
 
     <!-- ============================================== -->
-    <!-- TAB 3: 24/7 CUSTOMER CARE                      -->
+    <!-- TAB 3: CUSTOMER CARE                           -->
     <!-- ============================================== -->
     <div id="tab-support" class="tab-content">
         <div class="support-card">
