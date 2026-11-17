@@ -74,7 +74,12 @@ async function activateUserOnRouter(ROUTER_URL, authHeader, phone, password, cli
             if (hostsRes.ok) {
                 const hosts = await hostsRes.json();
                 if (hosts && hosts.length > 0) {
-                    targetIp = hosts[0].address;
+                    // Pick the host that matches the local hotspot subnet or DHCP
+                    const validHost = hosts.find(h => h.address && h.address.startsWith('192.168.88.'))
+                        || hosts.find(h => h['to-address'] && h['to-address'].startsWith('192.168.88.'))
+                        || hosts.find(h => h.DHCP === 'true')
+                        || hosts[0];
+                    targetIp = (validHost.address && validHost.address.startsWith('192.168.88.')) ? validHost.address : (validHost['to-address'] || validHost.address);
                 }
             }
         }
