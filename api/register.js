@@ -4,9 +4,9 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 const crypto = require('crypto');
 const { createClient } = require('@libsql/client');
 
-// Turso Database Credentials
-const TURSO_URL = process.env.TURSO_DATABASE_URL || 'libsql://netcafe-nipunroy281.aws-ap-south-1.turso.io';
-const TURSO_TOKEN = process.env.TURSO_AUTH_TOKEN || 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3OTQ5Mzk3NzMsImlkIjoiMDFhMWVhYmYtMzQwMS03ZGVhLTk5YjAtMDg3MjNkMThmNmMzIiwia2lkIjoiU19uTnJUYTZVTFRGUTUweW9jQTZTN3Zrcm1TbUF3WGNLczExbjFBR1hWdyIsInJpZCI6Ijk0ZjVlNmUxLTMyNTctNDQyNi1hMmQ0LWNjMDQxYzYyZTdhNSJ9.4bR81inXfPy-BCZRTRvIV6tAK89SpbJOAyrghYHOkKmCPyOuCzdmviOvKUQdlI-Eqdn0iuKBaggcItb--GwxDA';
+// Turso Database Credentials (Strictly from Vercel Environment Variables)
+const TURSO_URL = process.env.TURSO_DATABASE_URL;
+const TURSO_TOKEN = process.env.TURSO_AUTH_TOKEN;
 
 let turso = null;
 try {
@@ -51,7 +51,6 @@ async function saveToTurso(phone, mac) {
 
         console.log(`Turso DB: Successfully saved/updated customer ${phone}`);
     } catch (dbErr) {
-        // Non-blocking: Even if DB has an issue, WiFi login must continue
         console.error('Turso DB Error:', dbErr.message);
     }
 }
@@ -78,7 +77,6 @@ module.exports = async (req, res) => {
     }
 
     try {
-        // Handle JSON or string body
         let body = req.body;
         if (typeof body === 'string') {
             try {
@@ -96,11 +94,18 @@ module.exports = async (req, res) => {
             });
         }
 
-        // 3. Environment Variables
-        const ROUTER_URL = process.env.ROUTER_URL || 'https://103.132.220.121:8443';
-        const API_USER = process.env.API_USER || 'api-hotspot';
-        const API_PASS = process.env.API_PASS || 'Hotspot@1036Pass!';
+        // 3. Environment Variables (Strictly from Vercel)
+        const ROUTER_URL = process.env.ROUTER_URL;
+        const API_USER = process.env.API_USER;
+        const API_PASS = process.env.API_PASS;
         const SECRET_PEPPER = process.env.SECRET_PEPPER || 'HotspotSecretKey2025';
+
+        if (!ROUTER_URL || !API_USER || !API_PASS) {
+            return res.status(500).json({
+                success: false,
+                message: 'Server configuration error: MikroTik Environment variables not set.'
+            });
+        }
 
         const password = generatePassword(phone, SECRET_PEPPER);
         const authHeader = 'Basic ' + Buffer.from(`${API_USER}:${API_PASS}`).toString('base64');
@@ -121,7 +126,6 @@ module.exports = async (req, res) => {
         if (checkRes.ok) {
             const users = await checkRes.json();
             if (users && users.length > 0) {
-                // User already exists in MikroTik, return credentials for instant login
                 return res.status(200).json({
                     success: true,
                     status: 'EXISTING_USER',
