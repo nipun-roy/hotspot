@@ -1,17 +1,20 @@
 {
   "name": "hotspot",
   "version": "1.0.0",
-  "description": "MikroTik Mobile Number Hotspot Registration Serverless API for Vercel",
+  "description": "MikroTik Mobile Hotspot Auto-Registration with Turso Database",
   "main": "api/register.js",
   "scripts": {
     "start": "vercel dev"
   },
+  "dependencies": {
+    "@libsql/client": "^0.14.0"
+  },
   "keywords": [
     "mikrotik",
     "hotspot",
-    "routeros",
-    "vercel",
-    "captive-portal"
+    "turso",
+    "libsql",
+    "vercel"
   ],
   "author": "Nipun Roy",
   "license": "MIT"

@@ -2,6 +2,59 @@
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 const crypto = require('crypto');
+const { createClient } = require('@libsql/client');
+
+// Turso Database Credentials
+const TURSO_URL = process.env.TURSO_DATABASE_URL || 'libsql://netcafe-nipunroy281.aws-ap-south-1.turso.io';
+const TURSO_TOKEN = process.env.TURSO_AUTH_TOKEN || 'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3OTQ5Mzk3NzMsImlkIjoiMDFhMWVhYmYtMzQwMS03ZGVhLTk5YjAtMDg3MjNkMThmNmMzIiwia2lkIjoiU19uTnJUYTZVTFRGUTUweW9jQTZTN3Zrcm1TbUF3WGNLczExbjFBR1hWdyIsInJpZCI6Ijk0ZjVlNmUxLTMyNTctNDQyNi1hMmQ0LWNjMDQxYzYyZTdhNSJ9.4bR81inXfPy-BCZRTRvIV6tAK89SpbJOAyrghYHOkKmCPyOuCzdmviOvKUQdlI-Eqdn0iuKBaggcItb--GwxDA';
+
+let turso = null;
+try {
+    if (TURSO_URL && TURSO_TOKEN) {
+        turso = createClient({
+            url: TURSO_URL,
+            authToken: TURSO_TOKEN
+        });
+    }
+} catch (e) {
+    console.error('Turso Client Init Error:', e.message);
+}
+
+// Save or Update Customer in Turso Database
+async function saveToTurso(phone, mac) {
+    if (!turso) return;
+    try {
+        // 1. Create table if not exists
+        await turso.execute(`
+            CREATE TABLE IF NOT EXISTS hotspot_users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                phone TEXT UNIQUE,
+                mac TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                last_login DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // 2. Insert new user or update last_login on conflict
+        const cleanMac = (mac && mac !== '$(mac)' && mac.trim() !== '') ? mac.trim() : null;
+
+        await turso.execute({
+            sql: `
+                INSERT INTO hotspot_users (phone, mac, created_at, last_login)
+                VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                ON CONFLICT(phone) DO UPDATE SET
+                    last_login = CURRENT_TIMESTAMP,
+                    mac = COALESCE(?, hotspot_users.mac)
+            `,
+            args: [phone, cleanMac, cleanMac]
+        });
+
+        console.log(`Turso DB: Successfully saved/updated customer ${phone}`);
+    } catch (dbErr) {
+        // Non-blocking: Even if DB has an issue, WiFi login must continue
+        console.error('Turso DB Error:', dbErr.message);
+    }
+}
 
 // Generate deterministic 12-char password from phone + secret pepper
 function generatePassword(phone, pepper) {
@@ -25,7 +78,14 @@ module.exports = async (req, res) => {
     }
 
     try {
-        const { phone, mac } = req.body || {};
+        // Handle JSON or string body
+        let body = req.body;
+        if (typeof body === 'string') {
+            try {
+                body = JSON.parse(body);
+            } catch (e) {}
+        }
+        const { phone, mac } = body || {};
 
         // 2. Validate Bangladeshi 11-digit mobile number
         const bdMobileRegex = /^01[3-9]\d{8}$/;
@@ -37,22 +97,18 @@ module.exports = async (req, res) => {
         }
 
         // 3. Environment Variables
-        const ROUTER_URL = process.env.ROUTER_URL;
-        const API_USER = process.env.API_USER;
-        const API_PASS = process.env.API_PASS;
+        const ROUTER_URL = process.env.ROUTER_URL || 'https://103.132.220.121:8443';
+        const API_USER = process.env.API_USER || 'api-hotspot';
+        const API_PASS = process.env.API_PASS || 'Hotspot@1036Pass!';
         const SECRET_PEPPER = process.env.SECRET_PEPPER || 'HotspotSecretKey2025';
-
-        if (!ROUTER_URL || !API_USER || !API_PASS) {
-            return res.status(500).json({
-                success: false,
-                message: 'Server configuration error: Environment variables (ROUTER_URL, API_USER, API_PASS) not configured on Vercel.'
-            });
-        }
 
         const password = generatePassword(phone, SECRET_PEPPER);
         const authHeader = 'Basic ' + Buffer.from(`${API_USER}:${API_PASS}`).toString('base64');
 
-        // 4. Check if user already exists in MikroTik Hotspot database
+        // 4. Save/Update to Turso Database in parallel
+        await saveToTurso(phone, mac);
+
+        // 5. Check if user already exists in MikroTik Hotspot database
         const checkUrl = `${ROUTER_URL}/rest/ip/hotspot/user?name=${phone}`;
         const checkRes = await fetch(checkUrl, {
             method: 'GET',
@@ -65,23 +121,23 @@ module.exports = async (req, res) => {
         if (checkRes.ok) {
             const users = await checkRes.json();
             if (users && users.length > 0) {
-                // User already exists, return credentials for instant login
+                // User already exists in MikroTik, return credentials for instant login
                 return res.status(200).json({
                     success: true,
                     status: 'EXISTING_USER',
-                    message: 'স্বাগতম! আপনার অ্যাকাউন্ট পাওয়া গেছে, লগইন হচ্ছে...',
+                    message: 'স্বাগতম! লগইন হচ্ছে...',
                     username: phone,
                     password: password
                 });
             }
         }
 
-        // 5. Create new Hotspot User in MikroTik
+        // 6. Create new Hotspot User in MikroTik
         const userPayload = {
             name: phone,
             password: password,
             profile: 'guest-profile',
-            comment: `Self-reg Vercel | ${new Date().toLocaleDateString('en-GB')}`
+            comment: `Self-reg | ${new Date().toLocaleDateString('en-GB')}`
         };
 
         if (mac && mac !== '$(mac)' && mac.trim() !== '') {
@@ -110,7 +166,7 @@ module.exports = async (req, res) => {
             console.error('MikroTik API Error:', errText);
             return res.status(500).json({
                 success: false,
-                message: 'MikroTik-এ ইউজার তৈরি করা যায়নি। অনুগ্রহ করে হেল্পডেস্কে যোগাযোগ করুন।'
+                message: 'MikroTik-এ ইউজার তৈরি করা যায়নি।'
             });
         }
 
@@ -118,7 +174,7 @@ module.exports = async (req, res) => {
         console.error('Internal Server Error:', error);
         return res.status(500).json({
             success: false,
-            message: 'সার্ভারের সাথে যোগাযোগ করা যাচ্ছে না। কিছুক্ষণ পর আবার চেষ্টা করুন।',
+            message: 'সার্ভারের সাথে যোগাযোগ করা যাচ্ছে না।',
             error: error.message
         });
     }
