@@ -1,0 +1,18 @@
+{
+  "name": "hotspot",
+  "version": "1.0.0",
+  "description": "MikroTik Mobile Number Hotspot Registration Serverless API for Vercel",
+  "main": "api/register.js",
+  "scripts": {
+    "start": "vercel dev"
+  },
+  "keywords": [
+    "mikrotik",
+    "hotspot",
+    "routeros",
+    "vercel",
+    "captive-portal"
+  ],
+  "author": "Nipun Roy",
+  "license": "MIT"
+}

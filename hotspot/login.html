@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WiFi Hotspot Login | ওয়াইফাই লগইন</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            padding: 20px;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+            width: 100%;
+            max-width: 400px;
+            padding: 35px 25px;
+            text-align: center;
+        }
+
+        .wifi-icon {
+            width: 64px;
+            height: 64px;
+            background: #e0e7ff;
+            color: #4f46e5;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px auto;
+        }
+
+        .wifi-icon svg {
+            width: 34px;
+            height: 34px;
+            fill: currentColor;
+        }
+
+        h2 {
+            font-size: 24px;
+            color: #1e293b;
+            margin-bottom: 6px;
+        }
+
+        p.subtitle {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 25px;
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 18px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 6px;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .prefix {
+            position: absolute;
+            left: 14px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #64748b;
+            pointer-events: none;
+        }
+
+        input[type="tel"] {
+            width: 100%;
+            padding: 14px 14px 14px 45px;
+            font-size: 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            outline: none;
+            transition: all 0.2s ease;
+            color: #0f172a;
+            letter-spacing: 1px;
+        }
+
+        input[type="tel"]:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #ffffff;
+            background: #4f46e5;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn:hover {
+            background: #4338ca;
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .spinner {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border: 3px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            border-top-color: #ffffff;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .msg-box {
+            display: none;
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .msg-box.error {
+            display: block;
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .msg-box.success {
+            display: block;
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        .footer {
+            margin-top: 25px;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="wifi-icon">
+        <svg viewBox="0 0 24 24">
+            <path d="M12 4C7.31 4 3.07 5.9 0 8.98L12 21 24 8.98C20.93 5.9 16.69 4 12 4zm0 3.5c3.67 0 7.02 1.43 9.53 3.78L12 19.34 2.47 11.28C4.98 8.93 8.33 7.5 12 7.5z"/>
+        </svg>
+    </div>
+
+    <h2>Free WiFi Zone</h2>
+    <p class="subtitle">আপনার মোবাইল নম্বর দিয়ে কানেক্ট করুন</p>
+
+    <!-- Hotspot registration UI form -->
+    <form id="regForm" onsubmit="handleRegistration(event)">
+        <div class="input-group">
+            <label for="phone">মোবাইল নম্বর (11 Digits)</label>
+            <div class="input-wrapper">
+                <span class="prefix">🇧🇩</span>
+                <input 
+                    type="tel" 
+                    id="phone" 
+                    placeholder="01XXXXXXXXX" 
+                    maxlength="11" 
+                    required 
+                    autocomplete="tel"
+                />
+            </div>
+        </div>
+
+        <button type="submit" class="btn" id="submitBtn">
+            <span class="spinner" id="btnSpinner"></span>
+            <span id="btnText">কানেক্ট করুন / Connect</span>
+        </button>
+    </form>
+
+    <div id="msgBox" class="msg-box"></div>
+
+    <div class="footer">
+        Powered by High-Speed Internet
+    </div>
+</div>
+
+<!-- MikroTik Standard Hidden Form for Final Login -->
+<form name="login" action="$(link-login-only)" method="post" style="display:none;">
+    <input type="hidden" name="username" id="mt_user" />
+    <input type="hidden" name="password" id="mt_pass" />
+    <input type="hidden" name="dst" value="$(link-orig)" />
+    <input type="hidden" name="popup" value="true" />
+</form>
+
+<script>
+    // ==============================================================
+    // আপনার Vercel-এর প্রজেক্ট ডিপ্লয় করার পর প্রাপ্ত URL বসান
+    // ==============================================================
+    const VERCEL_API_URL = "https://hotspot-eta.vercel.app/api/register"; 
+    // ^ ডিপ্লয় করার পর your-project-name.vercel.app দিন
+
+    const clientMac = "$(mac)"; // MikroTik template variable
+
+    async function handleRegistration(e) {
+        e.preventDefault();
+
+        const phoneInput = document.getElementById('phone');
+        const phone = phoneInput.value.trim();
+        const submitBtn = document.getElementById('submitBtn');
+        const btnSpinner = document.getElementById('btnSpinner');
+        const btnText = document.getElementById('btnText');
+        const msgBox = document.getElementById('msgBox');
+
+        // বাংলাদেশি ১১ ডিজিট মোবাইল নম্বর ভ্যালিডেশন
+        const bdRegex = /^01[3-9]\d{8}$/;
+        if (!bdRegex.test(phone)) {
+            showMsg('অনুগ্রহ করে সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন (যেমন: 017XXXXXXXX)', 'error');
+            phoneInput.focus();
+            return;
+        }
+
+        // বাটন লোডিং স্টেট
+        submitBtn.disabled = true;
+        btnSpinner.style.display = 'inline-block';
+        btnText.innerText = 'অপেক্ষা করুন...';
+        msgBox.style.display = 'none';
+
+        try {
+            const response = await fetch(VERCEL_API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    phone: phone,
+                    mac: clientMac
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.username && data.password) {
+                showMsg(data.message || 'রেজিস্ট্রেশন সফল! লগইন হচ্ছে...', 'success');
+
+                // MikroTik হিডেন ফর্মে পাসওয়ার্ড ও ইউজার বসিয়ে সাবমিট করা
+                document.getElementById('mt_user').value = data.username;
+                document.getElementById('mt_pass').value = data.password;
+
+                setTimeout(() => {
+                    document.forms['login'].submit();
+                }, 1200);
+
+            } else {
+                showMsg(data.message || 'সার্ভারে সমস্যা হয়েছে। পুনরায় চেষ্টা করুন।', 'error');
+                resetBtn();
+            }
+
+        } catch (err) {
+            console.error('API Error:', err);
+            showMsg('সার্ভারের সাথে যোগাযোগ করা যায়নি। আপনার ইন্টারনেট চেক করুন।', 'error');
+            resetBtn();
+        }
+    }
+
+    function showMsg(text, type) {
+        const msgBox = document.getElementById('msgBox');
+        msgBox.innerText = text;
+        msgBox.className = 'msg-box ' + type;
+    }
+
+    function resetBtn() {
+        const submitBtn = document.getElementById('submitBtn');
+        const btnSpinner = document.getElementById('btnSpinner');
+        const btnText = document.getElementById('btnText');
+        submitBtn.disabled = false;
+        btnSpinner.style.display = 'none';
+        btnText.innerText = 'কানেক্ট করুন / Connect';
+    }
+</script>
+
+</body>
+</html>
