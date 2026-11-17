@@ -642,14 +642,23 @@
             const data = await response.json();
 
             if (data.success && data.username && data.password) {
-                showMsg('লগইন সফল হয়েছে! netcafe-bd.com এ নিয়ে যাওয়া হচ্ছে...', 'success');
-
                 document.getElementById('mt_user').value = data.username;
                 document.getElementById('mt_pass').value = data.password;
 
-                setTimeout(() => {
-                    document.forms['login'].submit();
-                }, 800);
+                const loginAction = document.forms['login'].action;
+                // If testing outside MikroTik WiFi (on Vercel/Web), redirect directly to website
+                if (loginAction.includes('%24(link-login-only)') || loginAction.includes('$(link-login-only)')) {
+                    showMsg('রেজিস্ট্রেশন সফল হয়েছে! netcafe-bd.com এ নিয়ে যাওয়া হচ্ছে...', 'success');
+                    setTimeout(() => {
+                        window.location.href = "https://netcafe-bd.com/";
+                    }, 1000);
+                } else {
+                    // On real MikroTik Hotspot WiFi: submit credentials to router
+                    showMsg('লগইন সফল হয়েছে! netcafe-bd.com এ নিয়ে যাওয়া হচ্ছে...', 'success');
+                    setTimeout(() => {
+                        document.forms['login'].submit();
+                    }, 800);
+                }
 
             } else {
                 showMsg(data.message || 'সার্ভারে সমস্যা হয়েছে। পুনরায় চেষ্টা করুন।', 'error');
