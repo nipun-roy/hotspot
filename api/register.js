@@ -336,10 +336,10 @@ async function handleRouterOS(host, port, user, pass, phone, password, clientIp,
         const hostsRes = await client.command(['/ip/hotspot/host/print', `?mac-address=${clientMac.trim()}`]);
         const hosts = hostsRes.data || [];
         if (hosts.length > 0) {
-            const validHost = hosts.find(h => h.address && h.address.startsWith('192.168.88.'))
-                || hosts.find(h => h['to-address'] && h['to-address'].startsWith('192.168.88.'))
+            const validHost = hosts.find(h => h.address && h.address.startsWith('192.168.'))
+                || hosts.find(h => h['to-address'] && h['to-address'].startsWith('192.168.'))
                 || hosts[0];
-            targetIp = (validHost.address && validHost.address.startsWith('192.168.88.')) ? validHost.address : (validHost['to-address'] || validHost.address);
+            targetIp = (validHost.address && validHost.address.startsWith('192.168.')) ? validHost.address : (validHost['to-address'] || validHost.address);
         }
     }
 
